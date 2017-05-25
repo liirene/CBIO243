@@ -1,11 +1,24 @@
-setwd("~/Desktop/243datasets")
+setwd("~/Desktop/CBIO243")
 
-# Read in initial data
-methyl <- read.table("~/Desktop/243datasets/TCGA_LUNG_hMethyl450-2015-02-24/genomicMatrix", header=T, stringsAsFactors = F, sep = "\t")
-cnv_threshold <- read.table("~/Desktop/243datasets/TCGA_LUNG_gistic2thd-2015-02-24/genomicMatrix", header=T, stringsAsFactors = F, sep = "\t")
-cnv_threshold <- read.table("~/Desktop/243datasets/TCGA_LUNG_gistic2-2015-02-24/genomicMatrix", header=T, stringsAsFactors = F, sep = "\t")
-genexp <- read.table("~/Desktop/243datasets/TCGA_LUNG_exp_HiSeqV2-2015-02-24/genomicMatrix", header=T, stringsAsFactors = F,  sep = "\t")
+# Function initialization
+source("https://bioconductor.org/biocLite.R")
+biocLite("MethylMix")
+library(MethylMix)
+
+# Initial data from Xena
+methyl.xena <- read.table("~/Desktop/CBIO243/Xena/HumanMethylation450", header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
+cnv_threshold.xena <- read.table("~/Desktop/CBIO243/Xena/Gistic2_CopyNumber_Gistic2_all_thresholded.by_genes", header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
+cnv.xena <- read.table("~/Desktop/CBIO243/Xena/Gistic2_CopyNumber_Gistic2_all_data_by_genes", header=T, stringsAsFactors = F, sep = "\t", row.names=1)
+geneexp.xena <- read.table("~/Desktop/CBIO243/Xena/HiSeqV2", header=T, stringsAsFactors = F,  sep = "\t", row.names = 1)
+LUNG_clinicalMatrix <- read.table("~/Desktop/CBIO243/Xena/LUNG_clinicalMatrix", header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
+
+# Change all "-" to "." for TCGA patient IDs
+rownames(LUNG_clinicalMatrix) <- gsub("-",".",rownames(LUNG_clinicalMatrix)) 
+
+# Separate out methylmix tumor/normal samples
+tumor_pt_ids <- LUNG_clinicalMatrix[LUNG_clinicalMatrix$sample_type=="Primary Tumor",]
+normal_pt_ids <- LUNG_clinicalMatrix[LUNG_clinicalMatrix$sample_type=="Solid Tissue Normal",]
+
 
 source('~/Desktop/TCGA-Assembler/Module_A.R')
 DownloadBiospecimenClinicalData(cancerType = "LUAD", outputFileName = "Clinicaldata")
-DownloadM
