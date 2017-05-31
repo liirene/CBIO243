@@ -1,29 +1,28 @@
 setwd("~/Desktop/CBIO243")
 
 ########################################################################
-###Initializing files
+### Initializing files
 
 #Packages
 source("https://bioconductor.org/biocLite.R")
 biocLite(c("FDb.InfiniumMethylation.hg19", "MethylMix"))
 library(MethylMix)
 
-cancersite <- "LUAD"
-targetDirectory <- "~/Desktop/CBIO243/Xena"
+cancersite <- "LUSC"
+targetDirectory <- paste0("~/Desktop/CBIO243/", cancersite, "/")
+setwd(targetDirectory)
 
 # Initial data from Xena
-methyl.xena <- read.table("~/Desktop/CBIO243/Xena/HumanMethylation450", header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
-cnv_threshold.xena <- read.table("~/Desktop/CBIO243/Xena/Gistic2_CopyNumber_Gistic2_all_thresholded.by_genes", header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
-cnv.xena <- read.table("~/Desktop/CBIO243/Xena/Gistic2_CopyNumber_Gistic2_all_data_by_genes", header=T, stringsAsFactors = F, sep = "\t", row.names=1)
-geneexp.xena <- read.table("~/Desktop/CBIO243/Xena/HiSeqV2", header=T, stringsAsFactors = F,  sep = "\t", row.names = 1)
-LUNG_clinicalMatrix <- read.table("~/Desktop/CBIO243/Xena/LUNG_clinicalMatrix", header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
+methyl.xena <- read.table(paste0(targetDirectory, "HumanMethylation450"), header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
+geneexp.xena <- read.table(paste0(targetDirectory, "HiSeqV2"), header=T, stringsAsFactors = F,  sep = "\t", row.names = 1)
+clinicalMatrix <- read.table(paste0(targetDirectory, "LUNG_clinicalMatrix"), header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
 
 # Change all "-" to "." for TCGA patient IDs
-rownames(LUNG_clinicalMatrix) <- gsub("-",".",rownames(LUNG_clinicalMatrix)) 
+rownames(clinicalMatrix) <- gsub("-",".",rownames(clinicalMatrix)) 
 
 # Separate out methylmix tumor/normal samples
-tumor_pt_ids <- rownames(LUNG_clinicalMatrix[LUNG_clinicalMatrix$sample_type=="Primary Tumor",])
-normal_pt_ids <- rownames(LUNG_clinicalMatrix[LUNG_clinicalMatrix$sample_type=="Solid Tissue Normal",])
+pt_ids_tumor <- rownames(clinicalMatrix[clinicalMatrix$sample_type=="Primary Tumor",])
+pt_ids_normal <- rownames(clinicalMatrix[clinicalMatrix$sample_type=="Solid Tissue Normal",])
 
 ########################################################################
 
@@ -42,20 +41,22 @@ LUNG_meth_genename <- cbind(nearestGeneSymbol, methyl.xena[,2:dim(methyl.xena)[2
 
 ########################################################################
 
-### Data concordance b/t methylation and RNAseq
-
-pt_all <- rownames(LUNG_clinicalMatrix)
+### Intersecting patients and genes b/t methylation and RNAseq datasets
+pt_all <- rownames(clinicalMatrix)
 pt_methyl <- colnames(methyl.xena)
 pt_geneexp <- colnames(geneexp.xena)
 
 common1 <- intersect(pt_all, pt_methyl)
 common_pt <- intersect(pt_geneexp, common1) # Total 477 IDs b/t gene exp, clinical, and methyl in LUNG
 
-common_normal <- intersect (common_pt, normal_pt_ids) # total 21
-common_tumor <- intersect (common_pt, tumor_pt_ids) # total 454
+common_normal <- intersect (common_pt, pt_ids_normal) # total 21
+common_tumor <- intersect (common_pt, pt_ids_tumor) # total 454
 
 # Common genes b/t methylation and gene expression 
 common_gene <- intersect(LUNG_meth_genename$nearestGeneSymbol, rownames(geneexp.xena))
+
+########################################################################
+### Building and formatting datasets for Methylmix
 
 # Build tumor gene expression data
 geneexp_common_pts <- geneexp.xena[common_gene, common_pt]
@@ -91,7 +92,14 @@ methyl_tumor.naclean.agg <- data.matrix(methyl_tumor.naclean.agg[,c(-1, -2)])
 methyl_normal.naclean.agg <- data.matrix(methyl_normal.naclean.agg[,c(-1, -2)])
 geneexp_common_pts <- data.matrix(geneexp_common_pts)
 
-# Methylmix run
+########################################################################
+### Running MethylMix. Note: May take up to 20 minutes to run, depending
+### on how many samples you have! Plan accordingly!
+
+# Methylmix run and save results in file
 methylmixresult <- MethylMix(methyl_tumor.naclean.agg, geneexp_common_pts, methyl_normal.naclean.agg)
 drivers <- methylmixresult$MethylationDrivers
+methyl_states <- methylmixresult$MethylationStates
+
 write.csv(drivers, "drivers.csv")
+write.csv(methyl_states, "methylstates.csv")
