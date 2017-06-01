@@ -7,7 +7,7 @@ targetDirectory <- paste0(fileDirectory, cancersite, "/")
 setwd(targetDirectory)
 
 ### Load in files
-cnv.xena <- read.table(paste0(targetDirectory, "Gistic2_CopyNumber_Gistic2_all_data_by_genes"),
+cnv <- read.table(paste0(targetDirectory, "Gistic2_CopyNumber_Gistic2_all_data_by_genes"),
                        header=T, stringsAsFactors = F, sep = "\t", row.names=1)
 clinicalMatrix <- read.table(paste0(targetDirectory, cancersite, "_clinicalMatrix"),
                                   header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
@@ -21,7 +21,7 @@ pt_ids_normal <- rownames(clinicalMatrix[clinicalMatrix$sample_type=="Solid Tiss
 # NOTE: GISTIC dataset only contains tumor samples so no separation is needed.
 
 ### Stratify CNVs
-cnv.tumor <- cnv.xena
+cnv.tumor <- cnv
 cnv.tumor$sums <- rowSums(cnv.tumor)
 cnv.tumor$avg <- rowMeans(cnv.tumor)
 
@@ -29,16 +29,19 @@ cnv.tumor$avg <- rowMeans(cnv.tumor)
 # the CNV sums among pts. Deletion threshold as genes which have <-1 CNV and are in the
 # bottom 10% of CNV sums among pts.
 
-del_avg <- cnv.tumor[order(cnv.tumor$avg),][1:200,517:518]
-amp_avg <- cnv.tumor[order(-cnv.tumor$avg),][1:200,517:518]
+x <- ncol(cnv.tumor)
+y <- x-1
 
-del_sum <- cnv.tumor[order(cnv.tumor$sums),][1:200,517:518]
-amp_sum <- cnv.tumor[order(-cnv.tumor$sums),][1:200,517:518]
+del_avg <- cnv.tumor[order(cnv.tumor$avg),][1:500,y:x]
+amp_avg <- cnv.tumor[order(-cnv.tumor$avg),][1:500,y:x]
+
+del_sum <- cnv.tumor[order(cnv.tumor$sums),][1:500,y:x]
+amp_sum <- cnv.tumor[order(-cnv.tumor$sums),][1:500,y:x]
 
 driver_del <- rownames(del_avg[match(rownames(del_avg), rownames(del_sum)),])
 driver_amp <- rownames(amp_avg[match(rownames(amp_avg), rownames(amp_sum)),])
   
 driver_cnv <- c(driver_amp, driver_del)
 write.csv(driver_cnv, "driver_cnv.csv")
-# In which the first 200 are amp, last 200 are del
+# In which the first 500 are amp, last 500 are del
   
