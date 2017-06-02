@@ -9,6 +9,9 @@ setwd(targetDirectory)
 ### Load in files
 cnv <- read.table(paste0(targetDirectory, "Gistic2_CopyNumber_Gistic2_all_data_by_genes"),
                        header=T, stringsAsFactors = F, sep = "\t", row.names=1)
+cnv_thresholded <- read.table("Gistic2_CopyNumber_Gistic2_all_thresholded.by_genes",
+                              header=T, stringsAsFactors = F, sep = "\t", row.names=1)
+
 clinicalMatrix <- read.table(paste0(targetDirectory, cancersite, "_clinicalMatrix"),
                                   header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
 
@@ -25,23 +28,37 @@ cnv.tumor <- cnv
 cnv.tumor$sums <- rowSums(cnv.tumor)
 cnv.tumor$avg <- rowMeans(cnv.tumor)
 
-# Define amplification threshold as the genes which have >1 CNV and are in the top 10% 
-# the CNV sums among pts. Deletion threshold as genes which have <-1 CNV and are in the
-# bottom 10% of CNV sums among pts.
+# Frequency thresholds (total 516 patients)
+# Right now operating on >150?? 
 
-x <- ncol(cnv.tumor)
-y <- x-1
+driver_amp <- c()
+driver_del <- c()
 
-del_avg <- cnv.tumor[order(cnv.tumor$avg),][1:500,y:x]
-amp_avg <- cnv.tumor[order(-cnv.tumor$avg),][1:500,y:x]
+dataset <- cnv_thresholded
 
-del_sum <- cnv.tumor[order(cnv.tumor$sums),][1:500,y:x]
-amp_sum <- cnv.tumor[order(-cnv.tumor$sums),][1:500,y:x]
+for (i in 1:nrow(dataset)){  
+  x <- count(as.numeric(as.vector(dataset[i,])))
+  max_freq <- x[which(x$freq == max(x$freq)),]
+  
+  # Note: if two frequencies are the same, any() will help test if either of
+  # them are above zero. 
+  # Currently this is slightly biased in favor of filtering things out if a
+  # lack of change is largely represented.
+  
+  if (any(max_freq$x == 0)){
+    next
+  }
+  else if (any(max_freq$x > 0)){
+    driver_amp <- c(driver_amp, rownames(dataset)[i])
+  }
+  else if (any(max_freq$x < 0)){
+    driver_del <- c(driver_del, rownames(dataset)[i])
+  }
+}
 
-driver_del <- rownames(del_avg[match(rownames(del_avg), rownames(del_sum)),])
-driver_amp <- rownames(amp_avg[match(rownames(amp_avg), rownames(amp_sum)),])
   
 driver_cnv <- c(driver_amp, driver_del)
 write.csv(driver_cnv, "driver_cnv.csv")
 # In which the first 500 are amp, last 500 are del
   
+

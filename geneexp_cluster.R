@@ -30,7 +30,7 @@ km_sizes$elements <- as.numeric(as.character(km_sizes$elements))
 km_sizes$cluster <- as.character(km_sizes$cluster)
 
 # Filter out modules with small number of elements per cluster? 
-nfilters <- 10
+nfilters <- 50 # modulate this
 large_modules <- km_sizes[which(km_sizes$elements >= nfilters),]
 
 for (i in 1:nrow(large_modules)){
@@ -45,7 +45,23 @@ km_elements_all <- fit_km$cluster
 
 for (i in 1:length(clustergenes)){
   a <- list(clusternumber = as.numeric(large_modules$cluster[i]),
-            elements = c(), drivers = c())
+            elements = c(), geneexp = data.frame(), pc1 = data.frame(), possible_drivers = c())
   clustergenes[[i]] <- a
-  clustergenes[[i]]$elements <- names(km_elements_all[which(km_elements_all == clustergenes[[i]]$clusternumber)]) # all that match !! a vector of names
+  
+  genes_included <- names(km_elements_all[which(km_elements_all == clustergenes[[i]]$clusternumber)]) # all that match !! a vector of names
+  clustergenes[[i]]$elements <- genes_included
+  
+  b <- prcomp(t(geneexp_common_pts[genes_included,]), scale=F, center=F) # Not sure if this will change anything?
+  
+  clustergenes[[i]]$pc1 <- as.matrix(b$x[,1]) # Pull out first PC
+  
+  # include gene expression of all the genes in each cluster... might not need this? 
+  clustergenes[[i]]$geneexp <- geneexp_common_pts[genes_included,]
 }  
+# any log transformations?
+
+prtest <- prcomp(test)
+
+# Note that drivers column is currently open to later be filled with sparse linreg
+
+

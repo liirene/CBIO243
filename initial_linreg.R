@@ -88,4 +88,10 @@ for (i in 1:nrow(cnv_common_pts)){
 lm_values <- lm_values[order(-lm_values$rsquared),]
 write.csv(lm_values, file=paste0(cancersite, "_lm_values.csv"))
 
+# Write list of genes with R^2 values above 0.9
+driver_linreg <- row.names(na.omit(lm_values[lm_values$rsquared>=0.9,]))
+
+# Why do NA values form when doing the linear regression?
+
+
 # Not sure why many are 0 in methylation... 
