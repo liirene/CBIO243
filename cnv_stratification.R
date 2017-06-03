@@ -56,9 +56,6 @@ for (i in 1:nrow(dataset)){
   }
 }
 
-  
 driver_cnv <- c(driver_amp, driver_del)
 write.csv(driver_cnv, "driver_cnv.csv")
-# In which the first 500 are amp, last 500 are del
-  
 

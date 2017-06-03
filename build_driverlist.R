@@ -23,3 +23,4 @@ driver_final <- c(a, b, c)
 # Build driver gene expression matrix 
 driver_geneexp <- as.matrix(geneexp_common_pts[driver_final,])
 
+write.csv(driver_geneexp, file = paste0("driver_geneexp_Rsq", Rsquared_filter, "_", cancersite, ".csv"))
