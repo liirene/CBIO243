@@ -1,5 +1,10 @@
 ### Linear regression for gene expression and cnvs. 
 
+fileDirectory <- "~/Desktop/CBIO243/"
+cancersite <- "LUAD"
+targetDirectory <- paste0(fileDirectory, cancersite, "/")
+setwd(targetDirectory)
+
 ########################################################################
 
 # Function to extract the overall ANOVA p-value out of a linear model object
@@ -20,12 +25,14 @@ geneexp.xena <- read.table(paste0(targetDirectory, "HiSeqV2"), header=T, strings
 clinicalMatrix <- read.table(paste0(targetDirectory, cancersite, "_clinicalMatrix"), header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
 cnv <- read.table(paste0(targetDirectory, "Gistic2_CopyNumber_Gistic2_all_data_by_genes"), header=T, stringsAsFactors = F, sep = "\t", row.names = 1)
 
+rownames(clinicalMatrix) <- gsub("-",".",rownames(clinicalMatrix)) 
+
 pt_all <- rownames(clinicalMatrix)
 pt_methyl <- colnames(methyl_genename[,-1])
 pt_geneexp <- colnames(geneexp.xena)
 pt_cnv <- colnames(cnv)
 
-# Include the intersections SOON
+# Include the intersections
 common1 <- intersect(pt_all, pt_methyl)
 common2 <- intersect(pt_geneexp, common1) 
 common3 <- intersect(pt_cnv, common2) # CNV only includes tumor patients
@@ -83,11 +90,14 @@ for (i in 1:nrow(cnv_common_pts)){
  lm_values$cnv_pval[i] <- summary(result)$coefficients[2,4]
 }
 
-# Order list and draw out top 200 in R-squared for candidate driver "List 1"
-# There is some discordance in the methyl genes and the rest of the genes. Try to find out what is missing... 
 lm_values <- lm_values[order(-lm_values$rsquared),]
 write.csv(lm_values, file=paste0(cancersite, "_lm_values.csv"))
 
 # Write list of genes with R^2 values above 0.9
-Rsquared_filter <- 0.95
+Rsquared_filter <- 0.90
 driver_linreg <- row.names(na.omit(lm_values[lm_values$rsquared >= Rsquared_filter,]))
+
+
+
+
+
