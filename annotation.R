@@ -5,8 +5,8 @@ biocLite(c("pathview", "gageData", "gage"))
 
 ## Functionalization. 
 
-pathview_annotation <- function{
-   require(pathview)
+pathview_annotation <- function(blah = x){
+  require(pathview)
   require(gageData)
   require(gage)
 }

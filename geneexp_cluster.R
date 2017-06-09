@@ -128,15 +128,19 @@ n_stringency <- 10 # max number of coefficients (drivers) per module
 
 # This is to define stringency for the model
 
+
+
 ##########################################################################
 for (i in 1:length(clustergenes)){
   a <- list(clusternumber = as.numeric(large_modules$cluster[i]),
-            elements = c(), geneexp = data.frame(), pc1 = data.frame(), possible_drivers = c())
+            elements = c(), pc1 = data.frame(), 
+            lambda_drivers = data.frame(), lambda_names = c(), possible_drivers = c())
   
   clustergenes[[i]] <- a
   
   genes_included <- names(km_elements_all[which(km_elements_all == clustergenes[[i]]$clusternumber)]) 
   clustergenes[[i]]$elements <- genes_included
+  
   
   # Principal Component Analysis
   b <- prcomp(t(geneexp_common_pts[genes_included,]), scale=F, center=F) 
@@ -144,6 +148,13 @@ for (i in 1:length(clustergenes)){
   # Pull out first PC
   c <- as.matrix(b$x[,1])
   clustergenes[[i]]$pc1 <- c 
+  
+  # Cross-validation before glmnet
+  cv <- cv.glmnet(t(driver_geneexp), t(c))
+  small.lambda <- as.matrix(coef(cv, s="lambda.1se")) # extract based on minimum lambda value
+  e <- small.lambda[small.lambda > 0,]
+  clustergenes[[i]]$lambda_drivers <- e
+  clustergenes[[i]]$lambda_names <- names(e)
   
   # GLMNET
   d <- glmnet(t(driver_geneexp), t(c), alpha = n_alpha, nlambda = n_lamb) 
@@ -153,8 +164,10 @@ for (i in 1:length(clustergenes)){
   clustergenes[[i]]$possible_drivers <- assoc_drivers[2:length(assoc_drivers)] 
   # don't include the intercept column
   
-  # include gene expression of all the genes in each cluster
-  clustergenes[[i]]$geneexp <- geneexp_common_pts[genes_included,]
+  cat("cluster", clustergenes[[i]]$clusternumber,"\n",
+      "lambda length =", length(clustergenes[[i]]$lambda_names),
+      "glmnet length =", length(clustergenes[[i]]$possible_drivers), "\n\n")
+  
 }  
 
 
